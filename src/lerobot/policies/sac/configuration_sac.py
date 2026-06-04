@@ -101,6 +101,7 @@ class SACConfig(PreTrainedConfig):
     )
 
     # Statistics for normalizing different types of inputs
+    # default_factory传入的是一个函数，而不是一个值，所以需要使用lambda创建一个返回字典的函数，目的是为了不让多个实例共享同一个对象
     dataset_stats: dict[str, dict[str, list[float]]] | None = field(
         default_factory=lambda: {
             OBS_IMAGE: {

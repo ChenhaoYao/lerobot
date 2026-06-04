@@ -148,7 +148,7 @@ def update_policy(
     return train_metrics, output_dict
 
 
-@parser.wrap()
+@parser.wrap() # accelerator定义为Accelerator或者None类型，如果不传参默认为None
 def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     """
     Main function to train a policy.
@@ -207,8 +207,8 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     # Use accelerator's device
     device = accelerator.device
-    torch.backends.cudnn.benchmark = True
-    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True # 第一次运行时自动测试所有算法，选最快的一种
+    torch.backends.cuda.matmul.allow_tf32 = True # 介于FP16和FP32之间的一种精度，平衡速度和精度
 
     # Dataset loading synchronization: main process downloads first to avoid race conditions
     if is_main_process:

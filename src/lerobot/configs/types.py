@@ -31,7 +31,8 @@ class PipelineFeatureType(str, Enum):
     OBSERVATION = "OBSERVATION"
 
 
-class NormalizationMode(str, Enum):
+# 如果不小心打错，比如写成了"min_max"而不是"MIN_MAX"，会报错
+class NormalizationMode(str, Enum): #多重继承，类的属性同时是字符串和枚举
     MIN_MAX = "MIN_MAX"
     MEAN_STD = "MEAN_STD"
     IDENTITY = "IDENTITY"
