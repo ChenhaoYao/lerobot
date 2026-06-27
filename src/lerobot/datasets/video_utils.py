@@ -614,6 +614,7 @@ def get_video_duration_in_s(video_path: Path | str) -> float:
 
 class VideoEncodingManager:
     """
+    录制时，图像先保存为 PNG 临时文件；录制结束后，批量编码为视频；然后删除 PNG 临时文件
     Context manager that ensures proper video encoding and data cleanup even if exceptions occur.
 
     This manager handles:

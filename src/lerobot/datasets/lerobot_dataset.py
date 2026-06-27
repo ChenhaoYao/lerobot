@@ -1566,18 +1566,18 @@ class LeRobotDataset(torch.utils.data.Dataset):
     @classmethod
     def create(
         cls,
-        repo_id: str,
-        fps: int,
-        features: dict,
-        root: str | Path | None = None,
-        robot_type: str | None = None,
-        use_videos: bool = True,
-        tolerance_s: float = 1e-4,
-        image_writer_processes: int = 0,
-        image_writer_threads: int = 0,
-        video_backend: str | None = None,
-        batch_encoding_size: int = 1,
-        vcodec: str = "libsvtav1",
+        repo_id: str,                              # 数据集标识，格式为 "用户名/数据集名"，如 "lerobot/test"
+        fps: int,                                   # 帧率，每秒记录的帧数，通常为 30
+        features: dict,                             # 数据集特征定义，包含 action 和 observation 的结构
+        root: str | Path | None = None,             # 数据集本地存储路径，默认为 ~/.cache/huggingface/lerobot/{repo_id}
+        robot_type: str | None = None,              # 机器人类型名称，如 "so100_follower"、"bi_so_follower"
+        use_videos: bool = True,                    # 是否将图像编码为视频格式，False 则保存为 PNG 图片
+        tolerance_s: float = 1e-4,                  # 时间戳容差（秒），用于同步数据和视频帧
+        image_writer_processes: int = 0,            # 图像写入子进程数，0 表示仅使用线程
+        image_writer_threads: int = 0,              # 每个摄像头的图像写入线程数，建议设为 4
+        video_backend: str | None = None,           # 视频解码后端，如 "pyav"、"torchvision"
+        batch_encoding_size: int = 1,               # 批量编码视频的 episode 数量，1 表示立即编码
+        vcodec: str = "libsvtav1",                  # 视频编码器，可选 "h264"、"hevc"、"libsvtav1"
     ) -> "LeRobotDataset":
         """Create a LeRobot Dataset from scratch in order to record data."""
         if vcodec not in VALID_VIDEO_CODECS:

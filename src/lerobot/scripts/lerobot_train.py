@@ -237,7 +237,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
         rename_map=cfg.rename_map,
     )
 
-    if cfg.peft is not None:
+    if cfg.peft is not None: # Parameter-Efficient Fine-Tuning（参数高效微调）
         logging.info("Using PEFT! Wrapping model.")
         # Convert CLI peft config to dict for overrides
         peft_cli_overrides = dataclasses.asdict(cfg.peft)
@@ -247,13 +247,15 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     accelerator.wait_for_everyone()
 
     # Create processors - only provide dataset_stats if not resuming from saved processors
-    processor_kwargs = {}
-    postprocessor_kwargs = {}
+    processor_kwargs = {} # 归一化
+    postprocessor_kwargs = {} # 反归一化
+    # 检测是否有统计信息（均值、标准差）
     if (cfg.policy.pretrained_path and not cfg.resume) or not cfg.policy.pretrained_path:
         # Only provide dataset_stats when not resuming from saved processor state
         processor_kwargs["dataset_stats"] = dataset.meta.stats
 
     # For SARM, always provide dataset_meta for progress normalization
+    # Stage-Aware Reward Modeling（阶段感知的奖励建模）判断机器人处于任务的哪个阶段以及该阶段的进度，并据此提供奖励信号
     if cfg.policy.type == "sarm":
         processor_kwargs["dataset_meta"] = dataset.meta
 
@@ -290,6 +292,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     # Load precomputed SARM progress for RA-BC if enabled
     # Generate progress using: src/lerobot/policies/sarm/compute_rabc_weights.py
+    # RA-BC（Reward-Aware Behavioral Clishing）（奖励感知的行为克隆）
     rabc_weights = None
     if cfg.use_rabc:
         from lerobot.utils.rabc import RABCWeights
@@ -338,7 +341,8 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     # create dataloader for offline training
     if hasattr(cfg.policy, "drop_n_last_frames"):
-        shuffle = False
+        shuffle = False # 每个 epoch 随机打乱样本顺序
+        # 自定义采样策略
         sampler = EpisodeAwareSampler(
             dataset.meta.episodes["dataset_from_index"],
             dataset.meta.episodes["dataset_to_index"],
@@ -366,9 +370,9 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     policy, optimizer, dataloader, lr_scheduler = accelerator.prepare(
         policy, optimizer, dataloader, lr_scheduler
     )
-    dl_iter = cycle(dataloader)
+    dl_iter = cycle(dataloader) # 创建一个无限循环的迭代器
 
-    policy.train()
+    policy.train() # 将模型设置为训练模式
 
     train_metrics = {
         "loss": AverageMeter("loss", ":.3f"),
@@ -380,6 +384,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     # Use effective batch size for proper epoch calculation in distributed training
     effective_batch_size = cfg.batch_size * accelerator.num_processes
+    # 用于跟踪和记录训练过程中的指标
     train_tracker = MetricsTracker(
         effective_batch_size,
         dataset.num_frames,

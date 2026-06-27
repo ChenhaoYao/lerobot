@@ -50,6 +50,7 @@ def _is_scalar(x):
     )
 
 
+# 将数据发送到可视化界面
 def log_rerun_data(
     observation: RobotObservation | None = None,
     action: RobotAction | None = None,

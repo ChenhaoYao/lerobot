@@ -100,6 +100,7 @@ from lerobot.robots import (  # noqa: F401
     RobotConfig,
     bi_openarm_follower,
     bi_so_follower,
+    dual_arm_zmq,
     earthrover_mini_plus,
     hope_jr,
     koch_follower,
@@ -123,6 +124,7 @@ from lerobot.teleoperators import (  # noqa: F401
     reachy2_teleoperator,
     so_leader,
     unitree_g1,
+    vr_zmq,
 )
 from lerobot.teleoperators.keyboard.teleop_keyboard import KeyboardTeleop
 from lerobot.utils.constants import ACTION, OBS_STR
@@ -207,7 +209,7 @@ class RecordConfig:
     # Whether to  display compressed images in Rerun
     display_compressed_images: bool = False
     # Use vocal synthesis to read events.
-    play_sounds: bool = True
+    play_sounds: bool = True # 录制时语音播报
     # Resume recording on an existing dataset.
     resume: bool = False
 
@@ -263,7 +265,7 @@ class RecordConfig:
 @safe_stop_image_writer
 def record_loop(
     robot: Robot,
-    events: dict,
+    events: dict, # 事件的意思就是结束、终端、下一轮等指令
     fps: int,
     teleop_action_processor: RobotProcessorPipeline[
         tuple[RobotAction, RobotObservation], RobotAction
@@ -287,6 +289,7 @@ def record_loop(
     if dataset is not None and dataset.fps != fps:
         raise ValueError(f"The dataset fps should be equal to requested fps ({dataset.fps} != {fps}).")
 
+    # LeKiwi 是一个移动机器人（有底盘 + 机械臂），需要两个遥操作器
     teleop_arm = teleop_keyboard = None
     if isinstance(teleop, list):
         teleop_keyboard = next((t for t in teleop if isinstance(t, KeyboardTeleop)), None)
@@ -335,6 +338,8 @@ def record_loop(
 
         if policy is not None or dataset is not None:
             observation_frame = build_dataset_frame(dataset.features, obs_processed, prefix=OBS_STR)
+
+        # -------------------------
 
         # Get action from either policy or teleop
         if policy is not None and preprocessor is not None and postprocessor is not None:
@@ -403,7 +408,7 @@ def record_loop(
         timestamp = time.perf_counter() - start_episode_t
 
 
-@parser.wrap()
+@parser.wrap() # 会自动解析命令行参数，所以调用record不需要传参
 def record(cfg: RecordConfig) -> LeRobotDataset:
     init_logging()
     logging.info(pformat(asdict(cfg)))
@@ -415,8 +420,8 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
         else cfg.display_compressed_images
     )
 
-    robot = make_robot_from_config(cfg.robot)
-    teleop = make_teleoperator_from_config(cfg.teleop) if cfg.teleop is not None else None
+    robot = make_robot_from_config(cfg.robot) # TODO 需要自定义机器人
+    teleop = make_teleoperator_from_config(cfg.teleop) if cfg.teleop is not None else None # TODO 需要自定义遥操作
 
     teleop_action_processor, robot_action_processor, robot_observation_processor = make_default_processors()
 
@@ -439,6 +444,7 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
     listener = None
 
     try:
+        # 加载已存在的数据集，继续往里添加 episode
         if cfg.resume:
             dataset = LeRobotDataset(
                 cfg.dataset.repo_id,
@@ -453,6 +459,7 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
                     num_threads=cfg.dataset.num_image_writer_threads_per_camera * len(robot.cameras),
                 )
             sanity_check_dataset_robot_compatibility(dataset, robot, cfg.dataset.fps, dataset_features)
+        # 创建全新的空数据集
         else:
             # Create empty dataset or load existing saved episodes
             sanity_check_dataset_name(cfg.dataset.repo_id, cfg.policy)
@@ -488,7 +495,7 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
         if teleop is not None:
             teleop.connect()
 
-        listener, events = init_keyboard_listener()
+        listener, events = init_keyboard_listener() # 控制录制流程（提前结束当前episode,重新录制当前episode等）
 
         with VideoEncodingManager(dataset):
             recorded_episodes = 0

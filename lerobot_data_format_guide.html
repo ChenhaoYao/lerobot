@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeRobot 数据格式详解</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3348;
+    --text: #e1e4ed;
+    --text2: #9ca0b0;
+    --accent: #6c8cff;
+    --accent2: #4a6adf;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --cyan: #22d3ee;
+    --purple: #a78bfa;
+    --yellow: #facc15;
+    --pink: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero h1 {
+    font-size: 2.4em;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .hero p { color: var(--text2); font-size: 1.1em; }
+  .badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.85em;
+    color: var(--cyan);
+    margin: 8px 4px 0;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 56px; }
+  .section-title {
+    font-size: 1.6em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title .num {
+    background: var(--accent);
+    color: #fff;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7em;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .section-desc { color: var(--text2); margin-bottom: 24px; font-size: 0.95em; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--accent);
+  }
+
+  /* File tree */
+  .tree {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.88em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .tree .dir { color: var(--cyan); font-weight: 600; }
+  .tree .file { color: var(--text); }
+  .tree .comment { color: var(--text2); font-size: 0.9em; }
+  .tree .tag { color: var(--orange); font-size: 0.8em; }
+
+  /* Code blocks */
+  .code-block {
+    background: #0d0f14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    line-height: 1.8;
+  }
+  .code-block .comment { color: #6b7280; }
+  .code-block .key { color: var(--cyan); }
+  .code-block .str { color: var(--green); }
+  .code-block .num { color: var(--orange); }
+  .code-block .bool { color: var(--purple); }
+  .code-block .kw { color: var(--pink); }
+  .code-block .type { color: var(--yellow); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(108, 140, 255, 0.04); }
+  td code, .inline-code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.88em;
+    color: var(--cyan);
+  }
+
+  /* Diagrams */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram svg { max-width: 100%; height: auto; }
+
+  /* Flow */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .flow-step .label { font-size: 0.78em; color: var(--text2); margin-bottom: 4px; }
+  .flow-step .value { font-weight: 600; font-size: 0.95em; }
+  .flow-arrow {
+    color: var(--accent);
+    font-size: 1.4em;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  /* Callout */
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: rgba(108, 140, 255, 0.06);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  .callout.warn { border-left-color: var(--orange); background: rgba(251, 146, 60, 0.06); }
+  .callout.success { border-left-color: var(--green); background: rgba(74, 222, 128, 0.06); }
+  .callout strong { color: var(--accent); }
+  .callout.warn strong { color: var(--orange); }
+  .callout.success strong { color: var(--green); }
+
+  /* Grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.6em; }
+  }
+
+  /* Stat box */
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-box .num-big {
+    font-size: 2em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-box .label { font-size: 0.82em; color: var(--text2); margin-top: 4px; }
+
+  /* Highlight bar */
+  .hbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+  }
+  .hbar .name { width: 160px; text-align: right; color: var(--text2); flex-shrink: 0; }
+  .hbar .bar-bg {
+    flex: 1;
+    height: 20px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .hbar .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+  }
+  .hbar .val { width: 90px; font-size: 0.85em; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>LeRobot 数据格式详解</h1>
+  <p>基于 shake_hands 握手数据集的实例解析</p>
+  <span class="badge">v3.0 格式</span>
+  <span class="badge">SO-101 机械臂</span>
+  <span class="badge">30 集 · 10113 帧 · 30fps</span>
+</div>
+
+<div class="container">
+
+<!-- ==================== Section 1: Overview ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">1</span>整体结构</h2>
+  <p class="section-desc">一个 LeRobot 数据集是一个目录，包含元数据、结构化数据和视频三部分。</p>
+
+  <div class="tree">
+<span class="dir">lerobot_zihao_dataset_shake_hands/</span>
+├── <span class="dir">meta/</span>
+│   ├── <span class="file">info.json</span>          <span class="comment">← 数据集"身份证"：特征定义、维度、fps</span>
+│   ├── <span class="file">stats.json</span>         <span class="comment">← 全局统计量，训练时用于归一化</span>
+│   ├── <span class="file">tasks.parquet</span>      <span class="comment">← 任务文本索引表</span>
+│   └── <span class="dir">episodes/</span>
+│       └── <span class="dir">chunk-000/</span>
+│           └── <span class="file">file-000.parquet</span>  <span class="comment">← 每集元数据 + 逐集统计量</span>
+├── <span class="dir">data/</span>
+│   └── <span class="dir">chunk-000/</span>
+│       └── <span class="file">file-000.parquet</span>      <span class="comment">← 核心数据：每帧一行，共 10113 行</span>
+└── <span class="dir">videos/</span>
+    └── <span class="dir">observation.images.front/</span>
+        └── <span class="dir">chunk-000/</span>
+            ├── <span class="file">file-000.mp4</span>      <span class="comment">← episode 0~17 拼接的视频</span>
+            └── <span class="file">file-001.mp4</span>      <span class="comment">← episode 18~29 拼接的视频</span>
+  </div>
+
+  <div class="grid3">
+    <div class="stat-box">
+      <div class="num-big">30</div>
+      <div class="label">Episodes</div>
+    </div>
+    <div class="stat-box">
+      <div class="num-big">10,113</div>
+      <div class="label">总帧数</div>
+    </div>
+    <div class="stat-box">
+      <div class="num-big">30</div>
+      <div class="label">FPS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Section 2: info.json ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">2</span>info.json — 数据集定义</h2>
+  <p class="section-desc">描述数据集的 schema：有哪些特征、每个特征的类型和维度。</p>
+
+  <div class="code-block">
+{
+  <span class="key">"codebase_version"</span>: <span class="str">"v3.0"</span>,
+  <span class="key">"robot_type"</span>: <span class="str">"so101_follower"</span>,
+  <span class="key">"total_episodes"</span>: <span class="num">30</span>,
+  <span class="key">"total_frames"</span>: <span class="num">10113</span>,
+  <span class="key">"fps"</span>: <span class="num">30</span>,
+  <span class="key">"features"</span>: {
+    <span class="key">"action"</span>: {
+      <span class="key">"dtype"</span>: <span class="str">"float32"</span>,
+      <span class="key">"shape"</span>: [<span class="num">6</span>],
+      <span class="key">"names"</span>: [<span class="str">"shoulder_pan.pos"</span>, <span class="str">"shoulder_lift.pos"</span>, <span class="str">"elbow_flex.pos"</span>,
+                <span class="str">"wrist_flex.pos"</span>, <span class="str">"wrist_roll.pos"</span>, <span class="str">"gripper.pos"</span>]
+    },
+    <span class="key">"observation.state"</span>: {
+      <span class="key">"dtype"</span>: <span class="str">"float32"</span>,
+      <span class="key">"shape"</span>: [<span class="num">6</span>],
+      <span class="key">"names"</span>: [<span class="str">"shoulder_pan.pos"</span>, ...]
+    },
+    <span class="key">"observation.images.front"</span>: {
+      <span class="key">"dtype"</span>: <span class="str">"video"</span>,
+      <span class="key">"shape"</span>: [<span class="num">1080</span>, <span class="num">1920</span>, <span class="num">3</span>]
+    },
+    <span class="key">"timestamp"</span>:     { <span class="key">"dtype"</span>: <span class="str">"float32"</span>, <span class="key">"shape"</span>: [<span class="num">1</span>] },  <span class="comment">// 自动添加</span>
+    <span class="key">"frame_index"</span>:   { <span class="key">"dtype"</span>: <span class="str">"int64"</span>,   <span class="key">"shape"</span>: [<span class="num">1</span>] },  <span class="comment">// 自动添加</span>
+    <span class="key">"episode_index"</span>: { <span class="key">"dtype"</span>: <span class="str">"int64"</span>,   <span class="key">"shape"</span>: [<span class="num">1</span>] },  <span class="comment">// 自动添加</span>
+    <span class="key">"index"</span>:         { <span class="key">"dtype"</span>: <span class="str">"int64"</span>,   <span class="key">"shape"</span>: [<span class="num">1</span>] },  <span class="comment">// 自动添加</span>
+    <span class="key">"task_index"</span>:    { <span class="key">"dtype"</span>: <span class="str">"int64"</span>,   <span class="key">"shape"</span>: [<span class="num">1</span>] }   <span class="comment">// 自动添加</span>
+  }
+}
+  </div>
+
+  <div class="callout">
+    <strong>用户只需定义 3 个特征</strong>：<code>action</code>、<code>observation.state</code>、<code>observation.images.front</code>。
+    后 5 个索引列是框架自动添加的，无需手动指定。
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>特征</th><th>dtype</th><th>shape</th><th>含义</th></tr>
+    <tr><td><code>observation.state</code></td><td>float32</td><td>(6,)</td><td>SO-101 的 6 个关节当前位置（度）</td></tr>
+    <tr><td><code>observation.images.front</code></td><td>video</td><td>(1080, 1920, 3)</td><td>前置摄像头图像，存储在 mp4 文件中</td></tr>
+    <tr><td><code>action</code></td><td>float32</td><td>(6,)</td><td>6 个关节目标位置（度）</td></tr>
+    <tr><td><code>timestamp</code></td><td>float32</td><td>(1,)</td><td>集内时间 = frame_index / fps</td></tr>
+    <tr><td><code>frame_index</code></td><td>int64</td><td>(1,)</td><td>集内帧序号</td></tr>
+    <tr><td><code>episode_index</code></td><td>int64</td><td>(1,)</td><td>属于第几个 episode</td></tr>
+    <tr><td><code>index</code></td><td>int64</td><td>(1,)</td><td>全局帧序号（跨 episode 唯一）</td></tr>
+    <tr><td><code>task_index</code></td><td>int64</td><td>(1,)</td><td>指向 tasks.parquet 的任务 ID</td></tr>
+  </table>
+  </div>
+</div>
+
+<!-- ==================== Section 3: Parquet ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">3</span>data/ — Parquet 核心数据</h2>
+  <p class="section-desc">Parquet 是列式存储格式，每行是一帧，每列是一个特征。10113 行 × 7 列。</p>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">什么是列式存储？</div>
+      <p style="font-size:0.9em; color:var(--text2); margin-bottom:12px;">
+        CSV 按行存：一行数据连续放。Parquet 按列存：同一列的数据连续放。
+      </p>
+      <div class="code-block" style="font-size:0.8em;">
+<span class="comment">// CSV（行式）</span>
+row0: [-0.93,-99.58,...], [-1.65,-99.16,...], 0.0
+row1: [-0.93,-99.58,...], [-1.65,-99.16,...], 0.033
+
+<span class="comment">// Parquet（列式）</span>
+action列:            [-0.93,-99.58,...] [-0.93,-99.58,...] ...
+observation.state列: [-1.65,-99.16,...] [-1.65,-99.16,...] ...
+timestamp列:         0.0 0.033 0.067 ...
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Parquet 的优势</div>
+      <div style="font-size:0.9em;">
+        <div style="margin-bottom:10px;"><span style="color:var(--green);">✓</span> <strong>压缩率高</strong>：同列数据类型相同、值域相近，压缩 3~10 倍</div>
+        <div style="margin-bottom:10px;"><span style="color:var(--green);">✓</span> <strong>按列读取</strong>：<code>pd.read_parquet(f, columns=["action"])</code> 只加载需要的列</div>
+        <div style="margin-bottom:10px;"><span style="color:var(--green);">✓</span> <strong>类型自描述</strong>：schema 内嵌文件头，不依赖外部定义</div>
+        <div><span style="color:var(--green);">✓</span> <strong>支持复杂类型</strong>：action 列存的是 <code>list[float]</code> 变长数组</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">实际数据长什么样？</h3>
+
+  <div class="table-wrap">
+  <table>
+    <tr>
+      <th>index</th><th>episode_index</th><th>frame_index</th><th>timestamp</th><th>task_index</th>
+      <th>observation.state</th><th>action</th>
+    </tr>
+    <tr>
+      <td>0</td><td>0</td><td>0</td><td>0.000</td><td>0</td>
+      <td><code>[-1.65, -99.16, 96.82, 63.25, 1.83, 1.46]</code></td>
+      <td><code>[-0.93, -99.58, 97.10, 60.54, 2.00, 0.56]</code></td>
+    </tr>
+    <tr>
+      <td>1</td><td>0</td><td>1</td><td>0.033</td><td>0</td>
+      <td><code>[-1.65, -99.16, 96.82, 63.25, 1.83, 1.46]</code></td>
+      <td><code>[-0.93, -99.58, 97.10, 60.54, 2.00, 0.56]</code></td>
+    </tr>
+    <tr>
+      <td>2</td><td>0</td><td>2</td><td>0.067</td><td>0</td>
+      <td><code>[-1.65, -99.16, 97.00, 63.08, 1.83, 1.46]</code></td>
+      <td><code>[-0.93, -99.58, 97.10, 60.54, 2.00, 0.56]</code></td>
+    </tr>
+    <tr style="color:var(--text2);">
+      <td colspan="7" style="text-align:center; font-style:italic;">... 共 10113 行 ...</td>
+    </tr>
+    <tr>
+      <td>10110</td><td>29</td><td>325</td><td>10.833</td><td>0</td>
+      <td><code>[-3.12, -99.33, 96.82, 63.42, 0.06, 1.53]</code></td>
+      <td><code>[-3.53, -99.92, 96.55, 62.95, 0.08, 1.53]</code></td>
+    </tr>
+    <tr>
+      <td>10112</td><td>29</td><td>327</td><td>10.900</td><td>0</td>
+      <td><code>[-3.12, -99.33, 96.82, 63.42, 0.06, 1.53]</code></td>
+      <td><code>[-3.53, -99.92, 96.55, 62.95, 0.08, 1.53]</code></td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>observation.state vs action</strong>：<code>observation.state</code> 是当前帧关节的实际位置（传感器读数），
+    <code>action</code> 是这一帧发送给电机的目标位置。遥操作采集时两者接近但不完全相同（存在控制延迟和电机响应差异）。
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">6 个关节对应关系</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>索引</th><th>关节名称</th><th>state 范围</th><th>action 范围</th></tr>
+    <tr><td>0</td><td>shoulder_pan.pos</td><td>[-19.62, 2.02]</td><td>[-19.72, 2.49]</td></tr>
+    <tr><td>1</td><td>shoulder_lift.pos</td><td>[-99.33, 11.40]</td><td>[-100.0, 11.50]</td></tr>
+    <tr><td>2</td><td>elbow_flex.pos</td><td>[8.03, 99.27]</td><td>[2.27, 99.82]</td></tr>
+    <tr><td>3</td><td>wrist_flex.pos</td><td>[-3.64, 78.66]</td><td>[-4.49, 79.27]</td></tr>
+    <tr><td>4</td><td>wrist_roll.pos</td><td>[-5.05, 14.14]</td><td>[-5.31, 14.88]</td></tr>
+    <tr><td>5</td><td>gripper.pos</td><td>[1.20, 36.79]</td><td>[0.0, 37.29]</td></tr>
+  </table>
+  </div>
+</div>
+
+<!-- ==================== Section 4: Videos ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">4</span>videos/ — 视频存储</h2>
+  <p class="section-desc">图像观测以 mp4 视频格式存储，多个 episode 拼接在同一个文件中以减少文件数量。</p>
+
+  <div class="card">
+    <div class="card-title">拼接策略</div>
+    <div class="code-block">
+<span class="dir">videos/observation.images.front/chunk-000/</span>
+├── <span class="file">file-000.mp4</span>   <span class="comment">← episode 0~17 拼接 (18集 × ~11.6秒 ≈ 210秒)</span>
+└── <span class="file">file-001.mp4</span>   <span class="comment">← episode 18~29 拼接 (12集 × ~11.6秒 ≈ 140秒)</span>
+    </div>
+  </div>
+
+  <h3 style="margin:20px 0 12px; font-size:1.05em;">episode 元数据记录每集在拼接视频中的位置</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>episode_index</th><th>length</th><th>from_timestamp</th><th>to_timestamp</th></tr>
+    <tr><td>0</td><td>350 帧</td><td>0.000s</td><td>11.667s</td></tr>
+    <tr><td>1</td><td>349 帧</td><td>11.667s</td><td>23.300s</td></tr>
+    <tr><td>2</td><td>350 帧</td><td>23.300s</td><td>34.967s</td></tr>
+    <tr style="color:var(--text2);">
+      <td colspan="4" style="text-align:center; font-style:italic;">...</td>
+    </tr>
+    <tr><td>18</td><td>350 帧</td><td>跨越到 file-001.mp4</td><td></td></tr>
+    <tr style="color:var(--text2);">
+      <td colspan="4" style="text-align:center; font-style:italic;">...</td>
+    </tr>
+    <tr><td>29</td><td>328 帧</td><td>...</td><td>...</td></tr>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>加载流程</strong>：通过 <code>torchcodec</code> 按时间戳定位并解码对应帧，自动转为 <code>(C, H, W)</code> float32 <code>[0, 1]</code> 张量。
+    episode 边界信息存在 <code>meta/episodes/</code> 的 parquet 中。
+  </div>
+
+  <div class="card">
+    <div class="card-title">视频编码信息</div>
+    <div class="table-wrap">
+    <table>
+      <tr><td><code>video.codec</code></td><td>av1</td></tr>
+      <tr><td><code>video.pix_fmt</code></td><td>yuv420p</td></tr>
+      <tr><td><code>video.fps</code></td><td>30</td></tr>
+      <tr><td><code>video.resolution</code></td><td>1920 × 1080</td></tr>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Section 5: stats.json ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">5</span>stats.json — 训练归一化的关键输入</h2>
+  <p class="section-desc">不是可选的统计文件，而是训练时数据归一化的必要参数来源。</p>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">每个策略都配置了归一化方式</div>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="comment">// ACT 策略的归一化配置</span>
+normalization_mapping = {
+    <span class="str">"VISUAL"</span>: <span class="type">IDENTITY</span>,    <span class="comment">// 图像不归一化</span>
+    <span class="str">"STATE"</span>:  <span class="type">MIN_MAX</span>,     <span class="comment">// 关节状态 → [-1, 1]</span>
+    <span class="str">"ACTION"</span>: <span class="type">MIN_MAX</span>,     <span class="comment">// 动作 → [-1, 1]</span>
+}
+
+<span class="comment">// SmolVLA / Pi0 策略</span>
+normalization_mapping = {
+    <span class="str">"STATE"</span>:  <span class="type">MEAN_STD</span>,    <span class="comment">// 标准化: (x-mean)/std</span>
+    <span class="str">"ACTION"</span>: <span class="type">MEAN_STD</span>,
+}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">5 种归一化模式</div>
+      <div class="table-wrap">
+      <table style="font-size:0.88em;">
+        <tr><th>模式</th><th>公式</th><th>使用策略</th></tr>
+        <tr><td><code>MIN_MAX</code></td><td><code>2(x-min)/(max-min)-1</code></td><td>ACT, VQ-BeT, TDMPC</td></tr>
+        <tr><td><code>MEAN_STD</code></td><td><code>(x-mean)/std</code></td><td>SmolVLA, Pi0, Wall-X</td></tr>
+        <tr><td><code>QUANTILES</code></td><td><code>2(x-q01)/(q99-q01)-1</code></td><td>Pi0.5</td></tr>
+        <tr><td><code>QUANTILE10</code></td><td>基于 q10/q90</td><td>—</td></tr>
+        <tr><td><code>IDENTITY</code></td><td>不处理</td><td>图像、语言</td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">stats.json 中的归一化参数</h3>
+  <div class="card">
+    <div class="card-title">observation.state 的统计量</div>
+    <div class="code-block" style="font-size:0.82em;">
+{
+  <span class="key">"observation.state"</span>: {
+    <span class="key">"min"</span>:  [<span class="num">-19.62</span>, <span class="num">-99.33</span>,  <span class="num">8.03</span>,  <span class="num">-3.64</span>,  <span class="num">-5.05</span>,  <span class="num">1.20</span>],
+    <span class="key">"max"</span>:  [<span class="num">  2.02</span>,  <span class="num">11.40</span>, <span class="num">99.27</span>,  <span class="num">78.66</span>,  <span class="num">14.14</span>, <span class="num">36.79</span>],
+    <span class="key">"mean"</span>: [<span class="num"> -6.57</span>, <span class="num">-68.43</span>, <span class="num">73.25</span>,  <span class="num">45.96</span>,   <span class="num">2.21</span>, <span class="num">10.20</span>],
+    <span class="key">"std"</span>:  [<span class="num">  3.82</span>,  <span class="num">34.90</span>, <span class="num">25.52</span>,  <span class="num">18.92</span>,   <span class="num">3.29</span>,  <span class="num">9.10</span>],
+    <span class="key">"q01"</span>:  [<span class="num">-11.46</span>, <span class="num">-99.26</span>, <span class="num">32.59</span>,  <span class="num">17.48</span>,  <span class="num">-0.85</span>,  <span class="num">1.78</span>],
+    <span class="key">"q99"</span>:  [<span class="num"> -2.89</span>, <span class="num">-14.76</span>, <span class="num">97.91</span>,  <span class="num">64.81</span>,   <span class="num">6.44</span>, <span class="num">27.63</span>]
+  }
+}
+    </div>
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">MIN_MAX 归一化实例</h3>
+  <div class="card">
+    <div class="card-title">shoulder_lift（第 2 维）：原始值 [-99.33, 11.40] → 归一化到 [-1, 1]</div>
+    <div style="margin-top:12px;">
+      <div class="hbar">
+        <span class="name">原始: -99.33</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:0%;"></div></div>
+        <span class="val">→ -1.00</span>
+      </div>
+      <div class="hbar">
+        <span class="name">原始: -68.43</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:28%;"></div></div>
+        <span class="val">→ -0.44</span>
+      </div>
+      <div class="hbar">
+        <span class="name">原始: -40.00</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:54%;"></div></div>
+        <span class="val">→ +0.07</span>
+      </div>
+      <div class="hbar">
+        <span class="name">原始: 11.40</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:100%;"></div></div>
+        <span class="val">→ +1.00</span>
+      </div>
+    </div>
+    <div class="code-block" style="margin-top:16px; font-size:0.85em;">
+<span class="comment">// 归一化公式</span>
+normalized = <span class="num">2</span> * (x - min) / (max - min) - <span class="num">1</span>
+
+<span class="comment">// 反归一化（推理时）</span>
+original = (normalized + <span class="num">1</span>) / <span class="num">2</span> * (max - min) + min
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>为什么必须归一化？</strong>
+    各关节数值范围差异大：<code>shoulder_lift</code> 在 -99~11，<code>elbow_flex</code> 在 8~99。
+    不做归一化的话，梯度会被大数值主导，训练不稳定。
+  </div>
+</div>
+
+<!-- ==================== Section 6: Episodes metadata ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">6</span>episodes/ — 逐集元数据</h2>
+  <p class="section-desc">每集一行，记录 episode 边界、任务描述、逐集统计量。</p>
+
+  <div class="card">
+    <div class="card-title">episodes parquet 的列结构</div>
+    <div class="table-wrap">
+    <table style="font-size:0.9em;">
+      <tr><th>列名</th><th>示例值</th><th>说明</th></tr>
+      <tr><td><code>episode_index</code></td><td>0</td><td>Episode ID</td></tr>
+      <tr><td><code>tasks</code></td><td>["Shanke Hands"]</td><td>任务描述文本列表</td></tr>
+      <tr><td><code>length</code></td><td>350</td><td>该集帧数</td></tr>
+      <tr><td><code>dataset_from_index</code></td><td>0</td><td>该集帧在 data parquet 中的起始行</td></tr>
+      <tr><td><code>dataset_to_index</code></td><td>350</td><td>该集帧在 data parquet 中的结束行（不含）</td></tr>
+      <tr><td><code>videos/.../from_timestamp</code></td><td>0.000</td><td>该集在拼接视频中的起始时间</td></tr>
+      <tr><td><code>videos/.../to_timestamp</code></td><td>11.667</td><td>该集在拼接视频中的结束时间</td></tr>
+      <tr><td><code>stats/action/min</code></td><td>[-13.92, ...]</td><td rowspan="3" style="vertical-align:middle;">该集内的逐特征统计量</td></tr>
+      <tr><td><code>stats/action/mean</code></td><td>[-3.41, ...]</td></tr>
+      <tr><td><code>stats/observation.state/...</code></td><td>...</td></tr>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Section 7: Tasks ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">7</span>tasks.parquet — 任务描述</h2>
+
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <tr><th>索引（任务文本）</th><th>task_index</th></tr>
+      <tr><td><code>Shanke Hands</code></td><td>0</td></tr>
+    </table>
+    </div>
+    <p style="margin-top:12px; font-size:0.9em; color:var(--text2);">
+      所有帧的 <code>task_index=0</code> 都指向这个任务。这是自然语言任务描述，供 SmolVLA 等 VLA 模型使用。
+      ACT 不使用任务文本。
+    </p>
+  </div>
+</div>
+
+<!-- ==================== Section 8: ACT Training ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">8</span>ACT 训练时如何读取数据</h2>
+  <p class="section-desc">ACT 通过 delta_timestamps 机制从数据集中提取"当前观测 + 未来动作序列"。</p>
+
+  <div class="card">
+    <div class="card-title">ACT 的 delta_indices 配置</div>
+    <div class="table-wrap">
+    <table>
+      <tr><th>维度</th><th>值</th><th>含义</th></tr>
+      <tr><td><code>observation_delta_indices</code></td><td><code>None</code></td><td>观测只取当前帧，不取历史帧</td></tr>
+      <tr><td><code>action_delta_indices</code></td><td><code>[0, 1, ..., 99]</code></td><td>动作取未来 100 帧（chunk_size）</td></tr>
+      <tr><td><code>reward_delta_indices</code></td><td><code>None</code></td><td>不使用奖励（模仿学习）</td></tr>
+    </table>
+    </div>
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">__getitem__(t=50) 返回的 batch 字典</h3>
+  <div class="card">
+    <div class="code-block" style="font-size:0.85em;">
+{
+  <span class="comment">// ---- 用户定义的特征 ----</span>
+  <span class="key">"observation.state"</span>:        tensor shape <span class="type">(6,)</span>          <span class="comment">// 第 50 帧的关节状态</span>
+  <span class="key">"observation.images.front"</span>: tensor shape <span class="type">(3, 1080, 1920)</span> <span class="comment">// 第 50 帧的图像</span>
+  <span class="key">"action"</span>:                   tensor shape <span class="type">(100, 6)</span>       <span class="comment">// 第 50~149 帧的动作</span>
+  <span class="key">"action_is_pad"</span>:            tensor shape <span class="type">(100,)</span>         <span class="comment">// 超出 episode 边界处为 True</span>
+
+  <span class="comment">// ---- 自动添加的索引 ----</span>
+  <span class="key">"index"</span>:          scalar  <span class="comment">// 全局帧序号</span>
+  <span class="key">"episode_index"</span>:  scalar  <span class="comment">// episode ID</span>
+  <span class="key">"frame_index"</span>:    scalar  <span class="comment">// 集内帧序号</span>
+  <span class="key">"timestamp"</span>:      scalar  <span class="comment">// 集内时间</span>
+  <span class="key">"task_index"</span>:     scalar  <span class="comment">// 任务 ID</span>
+  <span class="key">"task"</span>:           <span class="str">"Shanke Hands"</span>  <span class="comment">// 任务文本</span>
+}
+    </div>
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">action_is_pad 的作用</h3>
+  <div class="diagram">
+    <svg width="700" height="140" viewBox="0 0 700 140">
+      <defs>
+        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#6c8cff;stop-opacity:0.8"/>
+          <stop offset="70%" style="stop-color:#6c8cff;stop-opacity:0.8"/>
+          <stop offset="70%" style="stop-color:#f87171;stop-opacity:0.5"/>
+          <stop offset="100%" style="stop-color:#f87171;stop-opacity:0.5"/>
+        </linearGradient>
+      </defs>
+      <!-- Episode bar -->
+      <rect x="50" y="40" width="420" height="40" rx="6" fill="#6c8cff" opacity="0.3" stroke="#6c8cff" stroke-width="1"/>
+      <text x="260" y="65" text-anchor="middle" fill="#6c8cff" font-size="13" font-weight="600">当前 Episode (frame 0 ~ 349)</text>
+
+      <!-- Action chunk -->
+      <rect x="200" y="95" width="420" height="30" rx="4" fill="url(#g1)" opacity="0.6"/>
+      <text x="350" y="115" text-anchor="middle" fill="#e1e4ed" font-size="12" font-weight="600">Action Chunk (frame 50 ~ 149)</text>
+
+      <!-- Pad region -->
+      <rect x="470" y="95" width="150" height="30" rx="4" fill="#f87171" opacity="0.3" stroke="#f87171" stroke-width="1" stroke-dasharray="4"/>
+      <text x="545" y="115" text-anchor="middle" fill="#f87171" font-size="11">action_is_pad = True</text>
+
+      <!-- Markers -->
+      <line x1="200" y1="35" x2="200" y2="130" stroke="#4ade80" stroke-width="1" stroke-dasharray="3"/>
+      <text x="200" y="28" text-anchor="middle" fill="#4ade80" font-size="11">t=50</text>
+      <line x1="470" y1="35" x2="470" y2="130" stroke="#fb923c" stroke-width="1" stroke-dasharray="3"/>
+      <text x="470" y="28" text-anchor="middle" fill="#fb923c" font-size="11">t=349 (episode 结束)</text>
+    </svg>
+  </div>
+  <div class="callout">
+    <strong>loss 屏蔽</strong>：当 t=50、episode 在 t=349 结束时，action chunk 的第 300~349 帧是真实数据，第 350~149 帧（对应 episode 外的部分）用零填充，
+    <code>action_is_pad</code> 对应位置为 <code>True</code>。ACT 的 L1 loss 会屏蔽这些位置，不参与梯度计算。
+  </div>
+
+  <h3 style="margin:24px 0 12px; font-size:1.05em;">ACT forward() 读取的 key</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Batch Key</th><th>Shape</th><th>用途</th></tr>
+    <tr><td><code>observation.state</code></td><td>(B, 6)</td><td>送入 VAE encoder 和 transformer encoder</td></tr>
+    <tr><td><code>observation.images.front</code></td><td>(B, 3, H, W)</td><td>送入 ResNet backbone 提取视觉特征</td></tr>
+    <tr><td><code>action</code></td><td>(B, 100, 6)</td><td>VAE encoder 的目标 + L1 loss 计算</td></tr>
+    <tr><td><code>action_is_pad</code></td><td>(B, 100)</td><td>loss mask，屏蔽 episode 边界外的帧</td></tr>
+  </table>
+  </div>
+</div>
+
+<!-- ==================== Section 9: Pipeline ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">9</span>完整数据流</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="label">磁盘</div>
+      <div class="value">Parquet + MP4</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">加载</div>
+      <div class="value">LeRobotDataset</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">时间窗口</div>
+      <div class="value">delta_timestamps</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">归一化</div>
+      <div class="value">NormalizeProcessor</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">训练</div>
+      <div class="value">ACT.forward()</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">训练时（正向）</div>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="comment">// 1. 从 parquet 读原始值</span>
+state = [-99.33, 11.40, ...]
+
+<span class="comment">// 2. 用 stats.json 做 MIN_MAX 归一化</span>
+state_norm = 2*(state - min)/(max - min) - 1
+<span class="comment">// → [-1.0, 1.0, ...]</span>
+
+<span class="comment">// 3. 送入网络</span>
+loss = ACT.forward(state_norm, ...)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">推理时（反向）</div>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="comment">// 1. 网络输出归一化的动作</span>
+action_norm = model.predict(...)
+<span class="comment">// → [-0.5, 0.3, ...]</span>
+
+<span class="comment">// 2. 用 stats.json 反归一化</span>
+action = (action_norm + 1)/2 * (max - min) + min
+<span class="comment">// → [-50.0, 30.0, ...]</span>
+
+<span class="comment">// 3. 发送给电机</span>
+robot.send_action(action)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Section 10: Summary ==================== -->
+<div class="section">
+  <h2 class="section-title"><span class="num">10</span>关键总结</h2>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">统一格式</div>
+      <ul style="font-size:0.9em; padding-left:20px; color:var(--text2);">
+        <li>所有策略（ACT、Diffusion、TDMPC、SmolVLA...）共享同一个 <code>LeRobotDataset</code></li>
+        <li>差异仅在 <code>delta_timestamps</code>（取多大时间窗口）和归一化方式</li>
+        <li>新算法只需定义自己的 delta_indices 和 processor 即可</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">三个关键文件</div>
+      <ul style="font-size:0.9em; padding-left:20px; color:var(--text2);">
+        <li><strong>info.json</strong>：schema 定义（有什么特征、什么类型）</li>
+        <li><strong>data/*.parquet</strong>：每帧的 state/action 等结构化数据</li>
+        <li><strong>stats.json</strong>：训练归一化参数（不是可选的统计文件）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>
